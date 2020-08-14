@@ -1,0 +1,19 @@
+{
+    "name": "qttyeah/wechat",
+    "description": "Basic functions of wechat version:0.1",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "qttyeah",
+            "email": "15213725562@qq.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+	"autoload": {
+        "psr-4": {
+            "Qttyeah\\Wechat\\": "src"
+        }
+    }
+}
