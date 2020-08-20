@@ -27,6 +27,7 @@ class Account
      * @var array
      */
     private $urls = [
+        'tokenUrl' => 'https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={appid}&secret={secret}',
         'codeUrl' => 'https://open.weixin.qq.com/connect/oauth2/authorize?appid={appid}&redirect_uri={redirect_url}&response_type=code&scope=snsapi_base&state={state}#wechat_redirect',
         'authUrl' => 'https://api.weixin.qq.com/sns/oauth2/access_token?appid={appid}&secret={secret}&code={code}&grant_type=authorization_code',
         'userUrl' => 'https://api.weixin.qq.com/sns/userinfo?access_token={access_token}&openid={openid}&lang=zh_CN',
@@ -47,14 +48,38 @@ class Account
     }
 
     /**
+     * 获取基础token
+     * @return mixed|string
+     * access_token,expires_in
+     */
+    function getAccessToken()
+    {
+        $url = str_replace([
+            '{appid}',
+            '{secret}'
+        ], [
+            $this->options['appid'],
+            $this->options['secret'],
+        ], $this->urls['codeUrl']);
+        return BaseCallbackapi::curl_get($url);
+    }
+
+    /**
      * 授权链接
      * @param $redirectUrl 通知地址
      * @param int $state
      * @return mixed
+    {
+     * "access_token":"ACCESS_TOKEN",
+     * "expires_in":7200,
+     * "refresh_token":"REFRESH_TOKEN",
+     * "openid":"OPENID",
+     * "scope":"SCOPE"
+     * }
      */
     public function getcodeAction($redirectUrl, $state = 123)
     {
-        $codeUrl = str_replace([
+        $url = str_replace([
             '{appid}',
             '{redirect_url}',
             '{state}',
@@ -63,17 +88,22 @@ class Account
             urlencode($redirectUrl),
             $state
         ], $this->urls['codeUrl']);
-        return $codeUrl;
+        return $url;
     }
 
     /**
      * 获取授权access_token
      * @param $code
      * @return mixed|string
+    "access_token":"ACCESS_TOKEN",
+     * "expires_in":7200,
+     * "refresh_token":"REFRESH_TOKEN",
+     * "openid":"OPENID",
+     * "scope":"SCOPE"
      */
     public function authorization($code)
     {
-        $authUrl = str_replace([
+        $url = str_replace([
             '{appid}',
             '{secret}',
             '{code}',
@@ -82,7 +112,7 @@ class Account
             $this->options['secret'],
             $code
         ], $this->urls['authUrl']);
-        return self::curl_get($authUrl);
+        return BaseCallbackapi::curl_get($url);
     }
 
     /**
@@ -90,17 +120,26 @@ class Account
      * @param $accessToken
      * @param $openid
      * @return mixed|string
+    "openid":" OPENID",
+     * "nickname": NICKNAME,
+     * "sex":"1",
+     * "province":"PROVINCE",
+     * "city":"CITY",
+     * "country":"COUNTRY",
+     * "headimgurl":       "http://thirdwx.qlogo.cn/mmopen/g3MonUZtNHkdmzicIlibx6iaFqAc56vxLSUfpb6n5WKSYVY0ChQKkiaJSgQ1dZuTOgvLLrhJbERQQ4eMsv84eavHiaiceqxibJxCfHe/46",
+     * "privilege":[ "PRIVILEGE1" "PRIVILEGE2"     ],
+     * "unionid": "o6_bmasdasdsad6_2sgVt7hMZOPfL"
      */
     public function getInfo($accessToken, $openid)
     {
-        $userUrl = str_replace([
+        $url = str_replace([
             '{access_token}',
             '{openid}'
         ], [
             $accessToken,
             $openid
         ], $this->urls['userUrl']);
-        return self::curl_get($userUrl);
+        return BaseCallbackapi::curl_get($url);
     }
 
     /**
@@ -110,14 +149,14 @@ class Account
      */
     public function refreshToken($refreshToken)
     {
-        $refresh = str_replace([
+        $url = str_replace([
             '{refresh_token}',
             '{appid}'
         ], [
             $refreshToken,
             $this->options['appid']
         ], $this->urls['refreshToken']);
-        return self::curl_get($refresh);
+        return BaseCallbackapi::curl_get($url);
     }
 
     /**
@@ -128,56 +167,19 @@ class Account
      */
     public function checkToken($accessToken, $openid)
     {
-        $ckToken = str_replace([
+        $url = str_replace([
             '{access_token}',
             '{openid}'
         ], [
             $accessToken,
             $openid
         ], $this->urls['ckToken']);
-        $data = self::curl_get($ckToken);
+
+        $data = BaseCallbackapi::curl_get($url);
         return $data['errcode'] ? false : true;
     }
 
 
 
-    /**
-     * get curl
-     * @param $url
-     * @return mixed|string
-     */
-    public static function curl_get($url)
-    {
-        $header = array(
-            'Accept: application/json',
-        );
-        $curl = curl_init();
-        //设置抓取的url
-        curl_setopt($curl, CURLOPT_URL, $url);
-        //设置头文件的信息作为数据流输出
-        curl_setopt($curl, CURLOPT_HEADER, 0);
-        // 超时设置,以秒为单位
-        curl_setopt($curl, CURLOPT_TIMEOUT, 1);
-
-        // 超时设置，以毫秒为单位
-        // curl_setopt($curl, CURLOPT_TIMEOUT_MS, 500);
-
-        // 设置请求头
-        curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
-        //设置获取的信息以文件流的形式返回，而不是直接输出。
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-        //执行命令
-        $data = curl_exec($curl);
-
-        // 显示错误信息
-        if (curl_error($curl)) {
-            return ["error_code" => 404, "errmsg" => curl_error($curl)];
-        } else {
-            curl_close($curl);
-            return json_decode($data, 1);
-        }
-    }
 
 }

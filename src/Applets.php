@@ -57,7 +57,7 @@ class Applets
             $this->options['appid'],
             $this->options['secret']
         ], $this->urls['atUrl']);
-        return Account::curl_get($atUrl);
+        return BaseCallbackapi::curl_get($atUrl);
     }
 
     /**
@@ -78,7 +78,7 @@ class Applets
             $this->options['secret'],
             $code
         ], $this->urls['authUrl']);
-        return Account::curl_get($authUrl);
+        return BaseCallbackapi::curl_get($authUrl);
     }
 
 
@@ -136,7 +136,7 @@ class Applets
             'miniprogram_state' => $state,
             'page' => $page,
         ];
-        return self::curl_post_ssl($url, json_encode($data));
+        return BaseCallbackapi::curl_post_ssl($url, json_encode($data));
     }
 
     /**
@@ -161,43 +161,10 @@ class Applets
             "line_color" => $line_color,
             "is_hyaline" => $is_hyaline,
         ];
-        return self::curl_post_ssl($url, json_encode($data));
+        return BaseCallbackapi::curl_post_ssl($url, json_encode($data));
     }
 
-    /**
-     * curl方式发送
-     * @param $url
-     * @param $data
-     * @param int $second
-     * @param array $aHeader
-     * @return mixed|string
-     */
-    static function curl_post_ssl($url, $data = [], $second = 30, $aHeader = array())
-    {
-        $ch = curl_init();
-        //超时时间
-        curl_setopt($ch, CURLOPT_TIMEOUT, $second);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_SSLVERSION, 1);
 
-        if (count($aHeader) >= 1) {
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $aHeader);
-        }
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-        $data = curl_exec($ch);
-        if ($data) {
-            curl_close($ch);
-            return $data;
-        } else {
-            $error = curl_errno($ch);
-            curl_close($ch);
-            return json_encode(array("error_code" => $error));
-        }
-    }
 
 
 }
